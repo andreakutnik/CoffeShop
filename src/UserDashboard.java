@@ -21,7 +21,7 @@ public class UserDashboard implements ActionListener {
     JComboBox<String> paymentMethodComboBox;
     JButton placeOrderBtn;
     int offset;
-    final int width = 250;
+    final int width = 230;
     final int height = 250;
 
     UserDashboard(int userId) {
@@ -103,7 +103,6 @@ public class UserDashboard implements ActionListener {
         orderTable.setCellSelectionEnabled(false);
         orderTable.setDragEnabled(false);
 
-
         scrollPane = new JScrollPane(orderTable);
         scrollPane.setPreferredSize(new Dimension(500, 200));
         scrollPane.setBounds(width * 3 + 100, 50, width * 2, height);
@@ -123,7 +122,7 @@ public class UserDashboard implements ActionListener {
         frame.add(totalPriceLabel);
 
         JButton logoutButton = new JButton("Logout");
-        logoutButton.setBounds(width * 5, 10, 100, 30);
+        logoutButton.setBounds(screenSizeWidth - 350, screenSizeHeight - 200, 300, 30);
         logoutButton.setForeground(Color.WHITE);
         logoutButton.setBackground(primaryColor);
         logoutButton.setFont(textTheme);
@@ -194,6 +193,45 @@ public class UserDashboard implements ActionListener {
                 }
             }
 
+            // Update the quantities of the ingredients used in the products in the order
+            try {
+                Class.forName(Constants.jdbcClass);
+                Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser,
+                        Constants.databasePassword);
+                for (int i = 0; i < quantities.size(); i++) {
+                    if (quantities.get(i) > 0) {
+                        // Get the recipe associated with the product
+                        PreparedStatement stmt = con
+                                .prepareStatement("SELECT recipe_id FROM products WHERE id = ?");
+                        stmt.setInt(1, productIds.get(i));
+                        ResultSet rs = stmt.executeQuery();
+                        int recipeId = -1;
+                        if (rs.next()) {
+                            recipeId = rs.getInt("recipe_id");
+                        }
+
+                        // Get the ingredients used in the recipe
+                        stmt = con.prepareStatement(
+                                "SELECT ingredient_id, quantity FROM recipe_ingredients WHERE recipe_id = ?");
+                        stmt.setInt(1, recipeId);
+                        rs = stmt.executeQuery();
+                        while (rs.next()) {
+                            int ingredientId = rs.getInt("ingredient_id");
+                            int ingredientQuantity = rs.getInt("quantity");
+
+                            // Decrement the quantity of the ingredient
+                            stmt = con.prepareStatement(
+                                    "UPDATE ingredients SET quantity = quantity - ? WHERE id = ?");
+                            stmt.setInt(1, ingredientQuantity * quantities.get(i));
+                            stmt.setInt(2, ingredientId);
+                            stmt.executeUpdate();
+                        }
+                    }
+                }
+            } catch (SQLException | ClassNotFoundException ex) {
+                ex.printStackTrace();
+            }
+
             // Clear the table and reset the total price
             tableModel.setRowCount(0);
             totalPrice = 0.0;
@@ -239,5 +277,9 @@ public class UserDashboard implements ActionListener {
         Image img = icon.getImage();
         Image resizedImage = img.getScaledInstance(resizedWidth, resizedHeight, java.awt.Image.SCALE_SMOOTH);
         return new ImageIcon(resizedImage);
+    }
+
+    public static void main(String[] args) {
+        new UserDashboard(1);
     }
 }

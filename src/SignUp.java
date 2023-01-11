@@ -97,19 +97,20 @@ public class SignUp implements ActionListener {
                 Class.forName(Constants.jdbcClass);
                 Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser, Constants.databasePassword);
 
-                String signUpQuery = "INSERT INTO users (username, password, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)";
+                String signUpQuery = "INSERT INTO users (first_name, last_name, username, password, role) VALUES (?, ?, ?, ?, ?)";
 
                 PreparedStatement signUpStatement = con.prepareStatement(signUpQuery);
-                signUpStatement.setString(1, username);
-                signUpStatement.setString(2, password);
-                signUpStatement.setString(3, firstname);
-                signUpStatement.setString(4, lastname);
+                signUpStatement.setString(1, firstname);
+                signUpStatement.setString(2, lastname);
+                signUpStatement.setString(3, username);
+                signUpStatement.setString(4, password);
                 signUpStatement.setString(5, "waiter");
 
                 signUpStatement.execute();
 
                 JOptionPane.showMessageDialog(null, "Successful", "Sign Up", JOptionPane.INFORMATION_MESSAGE);
                 signupFrame.dispose();
+                new Login();
             } catch (SQLException e) {
                 if (e instanceof SQLIntegrityConstraintViolationException) {
                     JOptionPane.showMessageDialog(null, "Username already exists!", "Sign Up", JOptionPane.ERROR_MESSAGE);
