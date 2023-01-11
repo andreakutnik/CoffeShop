@@ -4,4 +4,6 @@ public class Constants {
     static public String connectionAddress = "jdbc:mysql://localhost:3306/coffee_shop";
     static public String databaseUser = "root";
     static public String databasePassword = "menjafaszba";
+
+    //creez constante pt conectare la baza de date
 }

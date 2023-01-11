@@ -20,7 +20,7 @@ public class AdminDashboard {
         Color primaryColor = new Color(57, 108, 103);
         Font textTheme = new Font("Verdana", Font.PLAIN, 16);
 
-        // Create a table to display ingredient quantities
+        // tabela de stoc
         DefaultTableModel ingredientModel = new DefaultTableModel(new String[]{"Ingredient", "Quantity"}, 0);
         JTable ingredientTable = new JTable(ingredientModel);
         ingredientTable.getTableHeader().setFont(textTheme);
@@ -40,7 +40,7 @@ public class AdminDashboard {
         ingredientPane.setBounds(50, 50, 300, 300);
         homeFrame.add(ingredientPane);
 
-        // Create a button to refresh the ingredient table
+        // butonul refresh
         JButton refreshButton = new JButton("Refresh");
         refreshButton.setForeground(Color.WHITE);
         refreshButton.setBackground(primaryColor);
@@ -54,7 +54,6 @@ public class AdminDashboard {
             try {
                 Class.forName(Constants.jdbcClass);
                 Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser, Constants.databasePassword);
-                // Create a statement to execute the SQL query
                 PreparedStatement stmt = con.prepareStatement("SELECT name, quantity FROM ingredients");
                 ResultSet ingredientResults = stmt.executeQuery();
                 ingredientModel.setRowCount(0);
@@ -74,7 +73,6 @@ public class AdminDashboard {
         try {
             Class.forName(Constants.jdbcClass);
             Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser, Constants.databasePassword);
-            // Create a statement to execute the SQL query
             PreparedStatement stmt = con.prepareStatement("SELECT name, quantity FROM ingredients");
             ResultSet ingredientResults = stmt.executeQuery();
             ingredientModel.setRowCount(0);
@@ -90,7 +88,7 @@ public class AdminDashboard {
             JOptionPane.showMessageDialog(homeFrame, "An error occurred while refreshing the ingredient table.");
         }
 
-        // Create a dropdown list of ingredients
+        // lista de ingrediete drop-down
         JComboBox<String> ingredientList = new JComboBox<>();
         ingredientList.setFont(textTheme);
         ingredientList.setForeground(Color.GRAY);
@@ -100,7 +98,7 @@ public class AdminDashboard {
 
         homeFrame.add(ingredientList);
 
-        // Create a text field for the quantity
+        // campul pt intorucerea cantitatii noi
         JTextField quantityField = new HintTextField("Quantity");
         quantityField.setFont(textTheme);
         quantityField.setForeground(Color.GRAY);
@@ -110,7 +108,7 @@ public class AdminDashboard {
         quantityField.setBounds(50, 500, 300, 30);
         homeFrame.add(quantityField);
 
-        // Create a button to update the quantity
+        // butonul update
         JButton updateButton = new JButton("Update");
         updateButton.setFont(textTheme);
         updateButton.setForeground(Color.WHITE);
@@ -123,7 +121,6 @@ public class AdminDashboard {
 
         DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Username", "Product Names", "Total Price", "Payment Method", "Status"}, 0);
 
-        // Create the table
         JTable table = new JTable(model);
         table.getTableHeader().setFont(textTheme);
         table.getTableHeader().setForeground(Color.WHITE);
@@ -158,7 +155,6 @@ public class AdminDashboard {
         try {
             Class.forName(Constants.jdbcClass);
             Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser, Constants.databasePassword);
-            // Create a statement to execute the SQL query
             PreparedStatement stmt = con.prepareStatement(
                     "SELECT o.id, u.username, GROUP_CONCAT(p.name) AS product_names, SUM(oi.quantity * p.price) AS total_price, o.payment_method, o.status " +
                             "FROM orders o " +
@@ -167,10 +163,8 @@ public class AdminDashboard {
                             "INNER JOIN products p ON oi.product_id = p.id " +
                             "GROUP BY o.id, u.username, o.payment_method, o.status");
 
-            // Execute the query and get the result set
             ResultSet rs = stmt.executeQuery();
 
-            // Add the data from the query to the table model
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String username = rs.getString("username");
@@ -180,7 +174,6 @@ public class AdminDashboard {
                 String status = rs.getString("status");
                 model.addRow(new Object[]{id, username, productNames, totalPrice, paymentMethod, status});
             }
-            // Add the table to a scroll pane
             JScrollPane scrollPane = new JScrollPane(table);
             scrollPane.setBounds(400, 50, 800, 600);
             homeFrame.add(scrollPane);
@@ -196,10 +189,8 @@ public class AdminDashboard {
             PreparedStatement stmt = con.prepareStatement(
                     "SELECT name FROM ingredients");
 
-            // Execute the query and get the result set
             ResultSet rs = stmt.executeQuery();
 
-            // Loop through the result set and add the ingredients to the dropdown list
             while (rs.next()) {
                 ingredientList.addItem(rs.getString("name"));
             }
@@ -215,11 +206,9 @@ public class AdminDashboard {
                 try {
                     Class.forName(Constants.jdbcClass);
                     Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser, Constants.databasePassword);
-                    // Create a statement to execute the SQL query
                     PreparedStatement stmt = con.prepareStatement(
                             "UPDATE ingredients SET quantity = ? WHERE name = ?");
 
-                    // Execute the query and get the result set
                     stmt.setInt(1, Integer.parseInt(quantityField.getText()));
                     stmt.setString(2, Objects.requireNonNull(ingredientList.getSelectedItem()).toString());
                     stmt.executeUpdate();

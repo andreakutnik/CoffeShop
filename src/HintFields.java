@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 
+//pt design pe log in screen
 class HintTextField extends JTextField {
     public HintTextField(String hint) {
         _hint = hint;

@@ -42,13 +42,10 @@ public class UserDashboard implements ActionListener {
         try {
             Class.forName(Constants.jdbcClass);
             Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser, Constants.databasePassword);
-            // Create a statement to execute the SQL query
             PreparedStatement stmt = con.prepareStatement("SELECT * FROM products");
 
-            // Execute the query and get the result set
             ResultSet rs = stmt.executeQuery();
 
-            // Add the data from the query to the table model
             while (rs.next()) {
                 String name = rs.getString("name");
                 double price = rs.getDouble("price");
@@ -146,10 +143,10 @@ public class UserDashboard implements ActionListener {
         frame.add(placeOrderBtn);
 
         placeOrderBtn.addActionListener(e -> {
-            // Get the selected payment method
+            // selectare modalitate de plata
             String paymentMethod = (String) paymentMethodComboBox.getSelectedItem();
 
-            // Insert the order into the orders table
+            // inserare comanda in tabel
             try {
                 Class.forName(Constants.jdbcClass);
                 Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser, Constants.databasePassword);
@@ -162,7 +159,7 @@ public class UserDashboard implements ActionListener {
                 JOptionPane.showMessageDialog(null, "Error inserting order into the database.");
             }
 
-            // Get the id of the newly inserted order
+            // id comenzii
             int orderId = 0;
             try {
                 Class.forName(Constants.jdbcClass);
@@ -176,7 +173,7 @@ public class UserDashboard implements ActionListener {
                 JOptionPane.showMessageDialog(null, "Error getting order id from the database.");
             }
 
-            // Insert the order items into the order_items table
+            // inserare comanda in tabela order_items
             for (int i = 0; i < quantities.size(); i++) {
                 if (quantities.get(i) > 0) {
                     try {
@@ -193,14 +190,14 @@ public class UserDashboard implements ActionListener {
                 }
             }
 
-            // Update the quantities of the ingredients used in the products in the order
+            // modificare cantitate ingredients folosite in comanda
             try {
                 Class.forName(Constants.jdbcClass);
                 Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser,
                         Constants.databasePassword);
                 for (int i = 0; i < quantities.size(); i++) {
                     if (quantities.get(i) > 0) {
-                        // Get the recipe associated with the product
+                        // folosim reteta asociata produsului
                         PreparedStatement stmt = con
                                 .prepareStatement("SELECT recipe_id FROM products WHERE id = ?");
                         stmt.setInt(1, productIds.get(i));
@@ -210,7 +207,7 @@ public class UserDashboard implements ActionListener {
                             recipeId = rs.getInt("recipe_id");
                         }
 
-                        // Get the ingredients used in the recipe
+                        // ingredientele folosite in reteta
                         stmt = con.prepareStatement(
                                 "SELECT ingredient_id, quantity FROM recipe_ingredients WHERE recipe_id = ?");
                         stmt.setInt(1, recipeId);
@@ -219,7 +216,7 @@ public class UserDashboard implements ActionListener {
                             int ingredientId = rs.getInt("ingredient_id");
                             int ingredientQuantity = rs.getInt("quantity");
 
-                            // Decrement the quantity of the ingredient
+                            // scadere cantitate ingredient in stoc
                             stmt = con.prepareStatement(
                                     "UPDATE ingredients SET quantity = quantity - ? WHERE id = ?");
                             stmt.setInt(1, ingredientQuantity * quantities.get(i));
@@ -232,7 +229,7 @@ public class UserDashboard implements ActionListener {
                 ex.printStackTrace();
             }
 
-            // Clear the table and reset the total price
+            // resetare tabela comanda
             tableModel.setRowCount(0);
             totalPrice = 0.0;
             totalPriceLabel.setText("Total Price: $0.0");
@@ -249,24 +246,20 @@ public class UserDashboard implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         try {
-            // Get the index of the clicked product button
             int index = Integer.parseInt(e.getActionCommand());
-            // Increase the quantity of the product
+            // incrementare cantitate produs
             quantities.set(index, quantities.get(index) + 1);
-            // Update the table model
             Object[] data = {productNames.get(index), "$" + prices.get(index), quantities.get(index), "$" + (prices.get(index) * quantities.get(index))};
             tableModel.addRow(data);
-            // Update the total price
+            // schimbare pret total
             totalPrice += prices.get(index);
             totalPriceLabel.setText("Total Price: $" + totalPrice);
         } catch (NumberFormatException ex) {
-            // Handle the case where the action command is not a valid integer index
             if (e.getActionCommand().equals("Place Order")) {
 
                 ex.printStackTrace();
 
             } else {
-                // Display an error message if the action command is not recognized
                 JOptionPane.showMessageDialog(frame, "Error: Unrecognized action command: " + e.getActionCommand());
             }
         }
