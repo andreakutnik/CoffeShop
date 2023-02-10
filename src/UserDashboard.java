@@ -46,6 +46,7 @@ public class UserDashboard implements ActionListener {
 
             ResultSet rs = stmt.executeQuery();
 
+            //adaugare intrari in tabela de comenzi
             while (rs.next()) {
                 String name = rs.getString("name");
                 double price = rs.getDouble("price");
@@ -102,24 +103,24 @@ public class UserDashboard implements ActionListener {
 
         scrollPane = new JScrollPane(orderTable);
         scrollPane.setPreferredSize(new Dimension(500, 200));
-        scrollPane.setBounds(width * 3 + 100, 50, width * 2, height);
+        scrollPane.setBounds(width * 3 + 50, 50, width * 2, height);
         frame.add(scrollPane);
 
         String[] paymentMethods = {"Cash", "Card"};
         paymentMethodComboBox = new JComboBox<>(paymentMethods);
-        paymentMethodComboBox.setBounds(width * 4 + 100, height + 70, width, 30);
+        paymentMethodComboBox.setBounds(width * 4 + 50, height + 70, width, 30);
         paymentMethodComboBox.setFont(textTheme);
         paymentMethodComboBox.setForeground(Color.GRAY);
         paymentMethodComboBox.setBackground(Color.WHITE);
         frame.add(paymentMethodComboBox);
 
         totalPriceLabel = new JLabel("Total Price: $0.0");
-        totalPriceLabel.setBounds(width * 3 + 100, height + 70, width, 30);
+        totalPriceLabel.setBounds(width * 3 + 50, height + 70, width, 30);
         totalPriceLabel.setFont(textTheme);
         frame.add(totalPriceLabel);
 
         JButton logoutButton = new JButton("Logout");
-        logoutButton.setBounds(screenSizeWidth - 350, screenSizeHeight - 200, 300, 30);
+        logoutButton.setBounds(screenSizeWidth - 450, screenSizeHeight - 200, 300, 30);
         logoutButton.setForeground(Color.WHITE);
         logoutButton.setBackground(primaryColor);
         logoutButton.setFont(textTheme);
@@ -138,15 +139,15 @@ public class UserDashboard implements ActionListener {
         placeOrderBtn.setFont(textTheme);
         placeOrderBtn.setOpaque(true);
         placeOrderBtn.setBorderPainted(false);
-        placeOrderBtn.setBounds(width * 4 + 100, height + 150, width, 30);
+        placeOrderBtn.setBounds(width * 4 + 50, height + 150, width, 30);
         placeOrderBtn.addActionListener(this);
         frame.add(placeOrderBtn);
 
         placeOrderBtn.addActionListener(e -> {
-            // selectare modalitate de plata
+            // selectare mod de plata
             String paymentMethod = (String) paymentMethodComboBox.getSelectedItem();
 
-            // inserare comanda in tabel
+            // adugare comanda in baza de date
             try {
                 Class.forName(Constants.jdbcClass);
                 Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser, Constants.databasePassword);
@@ -159,7 +160,7 @@ public class UserDashboard implements ActionListener {
                 JOptionPane.showMessageDialog(null, "Error inserting order into the database.");
             }
 
-            // id comenzii
+            // id-ul comenzii
             int orderId = 0;
             try {
                 Class.forName(Constants.jdbcClass);
@@ -173,7 +174,7 @@ public class UserDashboard implements ActionListener {
                 JOptionPane.showMessageDialog(null, "Error getting order id from the database.");
             }
 
-            // inserare comanda in tabela order_items
+
             for (int i = 0; i < quantities.size(); i++) {
                 if (quantities.get(i) > 0) {
                     try {
@@ -190,46 +191,23 @@ public class UserDashboard implements ActionListener {
                 }
             }
 
-            // modificare cantitate ingredients folosite in comanda
+            // update la stoc
             try {
                 Class.forName(Constants.jdbcClass);
                 Connection con = DriverManager.getConnection(Constants.connectionAddress, Constants.databaseUser,
                         Constants.databasePassword);
                 for (int i = 0; i < quantities.size(); i++) {
                     if (quantities.get(i) > 0) {
-                        // folosim reteta asociata produsului
-                        PreparedStatement stmt = con
-                                .prepareStatement("SELECT recipe_id FROM products WHERE id = ?");
+                        PreparedStatement stmt = con.prepareStatement("UPDATE ingredients i JOIN recipe_ingredients rci ON i.id = rci.ingredient_id JOIN recipes r ON rci.recipe_id = r.id JOIN products p ON r.id = p.recipe_id SET i.quantity = i.quantity - 1 WHERE p.id = ?");
                         stmt.setInt(1, productIds.get(i));
-                        ResultSet rs = stmt.executeQuery();
-                        int recipeId = -1;
-                        if (rs.next()) {
-                            recipeId = rs.getInt("recipe_id");
-                        }
-
-                        // ingredientele folosite in reteta
-                        stmt = con.prepareStatement(
-                                "SELECT ingredient_id, quantity FROM recipe_ingredients WHERE recipe_id = ?");
-                        stmt.setInt(1, recipeId);
-                        rs = stmt.executeQuery();
-                        while (rs.next()) {
-                            int ingredientId = rs.getInt("ingredient_id");
-                            int ingredientQuantity = rs.getInt("quantity");
-
-                            // scadere cantitate ingredient in stoc
-                            stmt = con.prepareStatement(
-                                    "UPDATE ingredients SET quantity = quantity - ? WHERE id = ?");
-                            stmt.setInt(1, ingredientQuantity * quantities.get(i));
-                            stmt.setInt(2, ingredientId);
-                            stmt.executeUpdate();
-                        }
+                        stmt.executeUpdate();
                     }
                 }
             } catch (SQLException | ClassNotFoundException ex) {
                 ex.printStackTrace();
             }
 
-            // resetare tabela comanda
+            //reset comenzi
             tableModel.setRowCount(0);
             totalPrice = 0.0;
             totalPriceLabel.setText("Total Price: $0.0");
@@ -247,11 +225,9 @@ public class UserDashboard implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         try {
             int index = Integer.parseInt(e.getActionCommand());
-            // incrementare cantitate produs
             quantities.set(index, quantities.get(index) + 1);
             Object[] data = {productNames.get(index), "$" + prices.get(index), quantities.get(index), "$" + (prices.get(index) * quantities.get(index))};
             tableModel.addRow(data);
-            // schimbare pret total
             totalPrice += prices.get(index);
             totalPriceLabel.setText("Total Price: $" + totalPrice);
         } catch (NumberFormatException ex) {
@@ -271,8 +247,5 @@ public class UserDashboard implements ActionListener {
         Image resizedImage = img.getScaledInstance(resizedWidth, resizedHeight, java.awt.Image.SCALE_SMOOTH);
         return new ImageIcon(resizedImage);
     }
-
-    public static void main(String[] args) {
-        new UserDashboard(1);
-    }
 }
+
